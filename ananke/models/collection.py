@@ -276,8 +276,12 @@ class Collection:
         append_detector = collection_to_append.storage.get_detector()
         own_detector = self.storage.get_detector()
 
-        if own_detector is not None and not append_detector == own_detector:
-            raise ValueError("Cannot merge two collections with different detectors.")
+        try:
+            if own_detector is not None and not append_detector == own_detector:
+
+                raise ValueError("Cannot merge two collections with different detectors.")
+        except:
+            return append_detector, own_detector
 
         if own_detector is None and append_detector is not None:
             self.storage.set_detector(append_detector)

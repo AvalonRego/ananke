@@ -275,6 +275,7 @@ class Collection:
         collection_to_append.open()
         append_detector = collection_to_append.storage.get_detector()
         own_detector = self.storage.get_detector()
+        self.logger.info("Trying merge")
 
         try:
             if own_detector is not None and not append_detector == own_detector:

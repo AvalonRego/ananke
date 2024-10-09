@@ -1,4 +1,5 @@
-"""Module containing a collection."""
+"""Module containing a collection.
+    re-org"""
 from __future__ import annotations
 
 import logging

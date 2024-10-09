@@ -182,100 +182,96 @@ class Collection:
     self.logger.info("Finished redistribution with mode: {}".format(redistribution_configuration.mode))
 
 
-def validate_input(self, redistribution_configuration, record_types):
-    """Validates the input parameters."""
-    if not isinstance(redistribution_configuration, RedistributionConfiguration):
-        raise TypeError("Invalid redistribution configuration")
-    if record_types is not None and not isinstance(record_types, (list, Types)):
-        raise TypeError("Invalid record types")
+    def validate_input(self, redistribution_configuration, record_types):
+        """Validates the input parameters."""
+        if not isinstance(redistribution_configuration, RedistributionConfiguration):
+            raise TypeError("Invalid redistribution configuration")
+        if record_types is not None and not isinstance(record_types, (list, Types)):
+            raise TypeError("Invalid record types")
 
 
-def get_record_types(self, record_types):
-    """Gets a list of record types based on input."""
-    if record_types is None:
-        return [e.value for e in EventType]
-    return [e.value for e in record_types]
+    def get_record_types(self, record_types):
+        """Gets a list of record types based on input."""
+        if record_types is None:
+            return [e.value for e in EventType]
+        return [e.value for e in record_types]
 
 
-def process_records(self, records, rng, redistribution_configuration, record_types):
-    """Processes each record and redistributes timestamps."""
-    new_differences = []
-    with tqdm(total=len(records), mininterval=0.5) as pbar:
-        for record in records.df.itertuples():
-            difference = self.process_record(record, rng, redistribution_configuration, record_types)
-            new_differences.append(difference)
-            pbar.update()
+    def process_records(self, records, rng, redistribution_configuration, record_types):
+        """Processes each record and redistributes timestamps."""
+        new_differences = []
+        with tqdm(total=len(records), mininterval=0.5) as pbar:
+            for record in records.df.itertuples():
+                difference = self.process_record(record, rng, redistribution_configuration, record_types)
+                new_differences.append(difference)
+                pbar.update()
 
-    return new_differences
-
-
-def process_record(self, record, rng, redistribution_configuration, record_types):
-    """Processes an individual record for redistribution."""
-    current_record_id = getattr(record, "record_id")
-    current_record_type = getattr(record, "type")
-
-    if current_record_type not in record_types:
-        self.logger.debug("Skipping record {}: Type not in record types.".format(current_record_id))
-        return 0
-
-    current_hits = self.storage.get_hits(record_ids=current_record_id)
-    if current_hits is None:
-        self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
-        return 0
-
-    current_time = getattr(record, "time")
-    interval = redistribution_configuration.interval
-    current_start, current_end = interval.start, interval.end
-
-    new_time, new_difference = self.calculate_new_time(current_hits, rng, redistribution_configuration, current_time, current_start, current_end)
-
-    self.update_storage(current_record_id, new_difference, current_hits)
-    
-    return new_difference
+        return new_differences
 
 
-def calculate_new_time(self, current_hits, rng, redistribution_configuration, current_time, current_start, current_end):
-    """Calculates the new timestamp based on redistribution mode."""
-    mode = redistribution_configuration.mode
-    if mode != EventRedistributionMode.START_TIME:
-        hits_statistics = current_hits.get_statistics(percentile=redistribution_configuration.percentile)
-        current_min, current_max = hits_statistics.min, hits_statistics.max
+    def process_record(self, record, rng, redistribution_configuration, record_types):
+        """Processes an individual record for redistribution."""
+        current_record_id = getattr(record, "record_id")
+        current_record_type = getattr(record, "type")
 
-        if mode == EventRedistributionMode.CONTAINS_HIT:
-            current_start = current_start - current_max + current_time
-            current_end = current_end - current_min + current_time
-        elif mode in (EventRedistributionMode.CONTAINS_EVENT, EventRedistributionMode.CONTAINS_PERCENTAGE):
-            current_length = current_max - current_min
-            current_offset = current_min - current_time
-            current_start = current_start - current_offset
-            current_end = current_end - current_offset - current_length
+        if current_record_type not in record_types:
+            self.logger.debug("Skipping record {}: Type not in record types.".format(current_record_id))
+            return 0
 
-    # Ensure valid time range
-    if current_end < current_start:
-        current_end = current_start + 1
+        current_hits = self.storage.get_hits(record_ids=current_record_id)
+        if current_hits is None:
+            self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
+            return 0
 
-    new_time = rng.uniform(current_start, current_end)
-    new_difference = new_time - current_time
+        current_time = getattr(record, "time")
+        interval = redistribution_configuration.interval
+        current_start, current_end = interval.start, interval.end
 
-    return new_time, new_difference
+        new_time, new_difference = self.calculate_new_time(current_hits, rng, redistribution_configuration, current_time, current_start, current_end)
 
-
-def update_storage(self, record_id, new_difference, current_hits):
-    """Updates the storage with new time values."""
-    current_hits.add_time(new_difference)
-    self.storage.del_hits(record_ids=record_id)
-    self.storage.set_hits(current_hits)
-
-    current_sources = self.storage.get_sources(record_ids=record_id)
-    if current_sources is not None:
-        current_sources.add_time(new_difference)
-        self.storage.del_sources(record_ids=record_id)
-        self.storage.set_sources(current_sources)
+        self.update_storage(current_record_id, new_difference, current_hits)
+        
+        return new_difference
 
 
-        records.add_time(new_differences)
-        self.storage.set_records(records=records, append=False)
-        self.logger.info("Finished to redistribute with mode: {}".format(mode))
+    def calculate_new_time(self, current_hits, rng, redistribution_configuration, current_time, current_start, current_end):
+        """Calculates the new timestamp based on redistribution mode."""
+        mode = redistribution_configuration.mode
+        if mode != EventRedistributionMode.START_TIME:
+            hits_statistics = current_hits.get_statistics(percentile=redistribution_configuration.percentile)
+            current_min, current_max = hits_statistics.min, hits_statistics.max
+
+            if mode == EventRedistributionMode.CONTAINS_HIT:
+                current_start = current_start - current_max + current_time
+                current_end = current_end - current_min + current_time
+            elif mode in (EventRedistributionMode.CONTAINS_EVENT, EventRedistributionMode.CONTAINS_PERCENTAGE):
+                current_length = current_max - current_min
+                current_offset = current_min - current_time
+                current_start = current_start - current_offset
+                current_end = current_end - current_offset - current_length
+
+        # Ensure valid time range
+        if current_end < current_start:
+            current_end = current_start + 1
+
+        new_time = rng.uniform(current_start, current_end)
+        new_difference = new_time - current_time
+
+        return new_time, new_difference
+
+
+    def update_storage(self, record_id, new_difference, current_hits):
+        """Updates the storage with new time values."""
+        current_hits.add_time(new_difference)
+        self.storage.del_hits(record_ids=record_id)
+        self.storage.set_hits(current_hits)
+
+        current_sources = self.storage.get_sources(record_ids=record_id)
+        if current_sources is not None:
+            current_sources.add_time(new_difference)
+            self.storage.del_sources(record_ids=record_id)
+            self.storage.set_sources(current_sources)
+
 
     def append(
         self,

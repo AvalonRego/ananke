@@ -779,7 +779,7 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         try:
             #for where in wheres:
             # self.store.remove(key=str_key, where=where)
-            Parallel(n_jobs=8)(self.store.remove)(key=str_key, where=where) for where in wheres)
+            Parallel(n_jobs=8)(self.store.remove)((key=str_key, where=where) for where in wheres)
         except KeyError:
             pass
 

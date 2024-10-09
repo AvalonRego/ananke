@@ -25,6 +25,8 @@ from ananke.models.event import Hits, RecordIds, Records, Sources
 from ananke.models.interfaces import DataFrameFacade
 from ananke.schemas.event import FullRecordSchema, RecordIdsTypes_, TypesTypes_
 
+from joblib import Parallel, delayed
+
 
 CollectionStorageConfiguration_ = TypeVar(
     "CollectionStorageConfiguration_", bound=StorageConfiguration
@@ -774,8 +776,9 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         )
 
         try:
-            for where in wheres:
-                self.store.remove(key=str_key, where=where)
+            #for where in wheres:
+            # self.store.remove(key=str_key, where=where)
+            Parallel(n_jobs=8)(self.store.remove)(key=str_key, where=where) for where in wheres)
         except KeyError:
             pass
 

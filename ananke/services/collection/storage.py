@@ -1,4 +1,5 @@
 """Module containing all the storage interfaces for collections."""
+"From avalon git"
 from __future__ import annotations
 
 import logging

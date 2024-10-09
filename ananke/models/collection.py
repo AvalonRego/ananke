@@ -157,29 +157,29 @@ class Collection:
         self,
         redistribution_configuration: RedistributionConfiguration,
         record_types: Optional[Union[List[Types], Types]] = None,
-    ) -> None:
-    """Redistributes the events records according to the configuration.
+        ) -> None:
+        """Redistributes the events records according to the configuration.
 
-    Args:
-        redistribution_configuration: Configuration for redistribution.
-        record_types: Types of records to redistribute.
-    """
-    self.validate_input(redistribution_configuration, record_types)
+        Args:
+            redistribution_configuration: Configuration for redistribution.
+            record_types: Types of records to redistribute.
+        """
+        self.validate_input(redistribution_configuration, record_types)
 
-    rng = np.random.default_rng(redistribution_configuration.seed)
-    record_types = self.get_record_types(record_types)
-    records = self.storage.get_records()
+        rng = np.random.default_rng(redistribution_configuration.seed)
+        record_types = self.get_record_types(record_types)
+        records = self.storage.get_records()
 
-    if records is None:
-        raise ValueError("No records to redistribute")
+        if records is None:
+            raise ValueError("No records to redistribute")
 
-    self.logger.info("Starting redistribution with mode: {}".format(redistribution_configuration.mode))
-    
-    new_differences = self.process_records(records, rng, redistribution_configuration, record_types)
+        self.logger.info("Starting redistribution with mode: {}".format(redistribution_configuration.mode))
+        
+        new_differences = self.process_records(records, rng, redistribution_configuration, record_types)
 
-    records.add_time(new_differences)
-    self.storage.set_records(records=records, append=False)
-    self.logger.info("Finished redistribution with mode: {}".format(redistribution_configuration.mode))
+        records.add_time(new_differences)
+        self.storage.set_records(records=records, append=False)
+        self.logger.info("Finished redistribution with mode: {}".format(redistribution_configuration.mode))
 
 
     def validate_input(self, redistribution_configuration, record_types):

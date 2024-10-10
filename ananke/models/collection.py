@@ -205,15 +205,24 @@ class Collection:
         return self.process_record(record, rng, redistribution_configuration, record_types)
 
     def process_records(self, records, rng, redistribution_configuration, record_types):
-        """Processes each record and redistributes timestamps."""
-        new_differences = []
+        """Processes each record and redistributes timestamps.
+
+            Args:
+                records: The records to process.
+                rng: Random number generator for redistribution.
+                redistribution_configuration: Configuration for how to redistribute.
+                record_types: Types of records to consider.
+
+            Returns:
+                List of new differences calculated from each record.
+        """
         
-        with tqdm(total=len(records), mininterval=0.5) as pbar:
-            # Use joblib to parallelize the processing
-            results = Parallel(n_jobs=8,prefer="threads")(delayed(process_single_record)(record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
-            
-            new_differences.extend(results)
-            pbar.update(len(results))
+        # Define a function to process a single record
+        def process_single_record(record):
+            return self.process_record(record, rng, redistribution_configuration, record_types)
+
+        # Use joblib to parallelize the processing of records
+        new_differences = Parallel(n_jobs=8,prefer="threads")(delayed(process_single_record)(record) for record in records.df.itertuples(index=False))
 
         return new_differences
 

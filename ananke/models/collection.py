@@ -217,7 +217,7 @@ class Collection:
             return self.process_record(record, rng, redistribution_configuration, record_types)
 
         # Use joblib to parallelize the processing of records
-        new_differences = Parallel(n_jobs=8,prefer="threads")(delayed(process_single_record)(record) for record in records.df.itertuples(index=False))
+        new_differences = Parallel(n_jobs=8,prefer="loky")(delayed(process_single_record)(record) for record in records.df.itertuples(index=False))
 
         return new_differences
 

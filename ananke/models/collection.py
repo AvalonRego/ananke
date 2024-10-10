@@ -1,5 +1,9 @@
 """Module containing a collection.
+<<<<<<< HEAD
 Parallel?"""
+=======
+    Reorg+Parallel"""
+>>>>>>> origin/Parallel
 from __future__ import annotations
 
 import logging
@@ -30,6 +34,7 @@ from ananke.services.collection.storage import AbstractCollectionStorage, Storag
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
+from joblib import Parallel, delayed
 
 
 
@@ -203,6 +208,7 @@ class Collection:
     
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps in parallel."""
+<<<<<<< HEAD
         
         def process_single_record(record):
             return self.process_record(record, rng, redistribution_configuration, record_types)
@@ -214,6 +220,14 @@ class Collection:
                 delayed(lambda r: (process_single_record(r), pbar.update()))(record) for record in records.df.itertuples())
                 )
             new_differences = [result[0] for result in results]
+=======
+        # Define a function to process a single record
+        def process_single_record(record):
+            return self.process_record(record, rng, redistribution_configuration, record_types)
+
+        # Use joblib's Parallel and delayed to process records in parallel
+        new_differences = Parallel(n_jobs=-1)(delayed(process_single_record)(record) for record in records.df.itertuples())
+>>>>>>> origin/Parallel
 
         return new_differences
 

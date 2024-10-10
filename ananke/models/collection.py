@@ -199,11 +199,6 @@ class Collection:
             return [e.value for e in EventType]
         return [e.value for e in record_types]
 
-
-    def process_single_record(record, rng, redistribution_configuration, record_types):
-        """Processes a single record."""
-        return self.process_record(record, rng, redistribution_configuration, record_types)
-
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps.
 

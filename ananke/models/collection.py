@@ -618,4 +618,4 @@ class Collection:
 
         # TODO: Delete temporary collection
         logging.info("Finished to merge collections with config.")
-        return new_collectio
+        return new_collection

@@ -1,5 +1,5 @@
 """Module containing a collection.
-    re-org Parallel"""
+    re-org+parallel"""
 from __future__ import annotations
 
 import logging
@@ -30,7 +30,7 @@ from ananke.services.collection.storage import AbstractCollectionStorage, Storag
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
-from joblib import Parallel, delayed
+import concurrent.futures
 
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -199,28 +199,24 @@ class Collection:
             return [e.value for e in EventType]
         return [e.value for e in record_types]
 
+
     def process_records(self, records, rng, redistribution_configuration, record_types):
-        """Processes each record and redistributes timestamps.
+        """Processes each record and redistributes timestamps."""
+        new_differences = []
 
-            Args:
-                records: The records to process.
-                rng: Random number generator for redistribution.
-                redistribution_configuration: Configuration for how to redistribute.
-                record_types: Types of records to consider.
-
-            Returns:
-                List of new differences calculated from each record.
-        """
-        
-        # Define a function to process a single record
         def process_single_record(record):
             return self.process_record(record, rng, redistribution_configuration, record_types)
 
-        # Use joblib to parallelize the processing of records
-        new_differences = Parallel(n_jobs=8,prefer="processes")(delayed(process_single_record)(record) for record in records.df.itertuples(index=False))
+        # Limit to 8 cores
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(process_single_record, record) for record in records.df.itertuples()]
+            
+            with tqdm(total=len(futures), mininterval=0.5) as pbar:
+                for future in concurrent.futures.as_completed(futures):
+                    new_differences.append(future.result())
+                    pbar.update()
 
         return new_differences
-
 
 
     def process_record(self, record, rng, redistribution_configuration, record_types):

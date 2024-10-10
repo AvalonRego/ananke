@@ -409,4 +409,213 @@ class Collection:
 
     @classmethod
     def from_merge(cls, merge_configuration: MergeConfiguration) -> Collection:
-        return new_collection
+        """Creates new collection based on merge configuration.
+
+        Args:
+            merge_configuration: Merge configuration to build new collection by.
+
+        Returns:
+            Merged collection.
+        """
+        logging.info("Starting to merge collections with config.")
+        collections = merge_configuration.in_collections
+        if len(collections) == 0:
+            raise ValueError("No collections passed")
+        rng = np.random.default_rng(merge_configuration.seed)
+        first_collection = cls(collections[0])
+        if merge_configuration.redistribution is not None or len(collections) > 1:
+            with first_collection:
+                logging.info("Starting to create joined temporary collection.")
+                tmp_collection = first_collection.copy(
+                    merge_configuration.tmp_collection
+                )
+        else:
+            collections[0].read_only = True
+            tmp_collection = cls(collections[0])
+
+        if len(collections) > 1:
+            tmp_collection.open()
+            for sub_collection in collections[1:]:
+                sub_collection = cls(configuration=sub_collection)
+                tmp_collection.append(collection_to_append=sub_collection)
+            tmp_collection.close()
+            logging.info("Finished creating joined temporary collection.")
+
+        if merge_configuration.redistribution is not None:
+            tmp_collection.open()
+            tmp_collection.redistribute(
+                redistribution_configuration=merge_configuration.redistribution
+            )
+            tmp_collection.close()
+
+        tmp_collection.read_only = True
+
+        tmp_collection.open()
+
+        if merge_configuration.content is None:
+            new_collection = tmp_collection.copy(merge_configuration.out_collection)
+        else:
+            new_collection = cls(merge_configuration.out_collection)
+            new_collection.open()
+            tmp_detector = tmp_collection.storage.get_detector()
+            if tmp_detector is not None:
+                new_collection.storage.set_detector(tmp_detector)
+            for content in merge_configuration.content:
+                logging.info(
+                    "Starting to create {} {} records".format(
+                        content.number_of_records, content.primary_type
+                    )
+                )
+                if content.secondary_types is not None:
+                    logging.info(
+                        "Secondary types: {}".format(
+                            ", ".join(
+                                [
+                                    str(secondary_type.value)
+                                    for secondary_type in content.secondary_types
+                                ]
+                            )
+                        )
+                    )
+                # Collect for duplicate ID
+                new_collection_records = new_collection.storage.get_records()
+                if new_collection_records is not None:
+                    new_collection_record_ids = new_collection_records.record_ids
+                else:
+                    new_collection_record_ids = []
+                # First load all primary records
+                if content.number_of_records is not None:
+                    number_of_records = content.number_of_records
+                else:
+                    number_of_records = len(new_collection_records)
+                interval = content.interval
+                primary_type = content.primary_type
+                primary_records = tmp_collection.storage.get_records(types=primary_type)
+                if primary_records is None or len(primary_records) < number_of_records:
+                    raise ValueError(
+                        "Not enough primary records of type {} given".format(
+                            primary_type
+                        )
+                    )
+
+                # Now all secondary records
+                secondary_records_list = []
+                if content.secondary_types is not None:
+                    for secondary_type in content.secondary_types:
+                        secondary_records_list.append(
+                            tmp_collection.storage.get_records(types=secondary_type)
+                        )
+
+                added_record_ids = []
+                misses = 0
+                misses_break_number = 50
+
+                with tqdm(total=number_of_records, mininterval=0.5) as pbar:
+                    # TODO: Check Performance
+                    while (
+                        len(added_record_ids) < number_of_records
+                        and misses < misses_break_number
+                    ):
+                        current_primary_record = primary_records.sample(
+                            n=1, random_state=rng
+                        )
+                        current_primary_record_id = (
+                            current_primary_record.record_ids.iloc[0]
+                        )
+                        # First set the primary hits and sources
+                        primary_hits = tmp_collection.storage.get_hits(
+                            record_ids=current_primary_record_id, interval=interval
+                        )
+
+                        current_sources_list: List[Sources] = []
+                        current_hits_list: List[Hits] = []
+
+                        # skip primary records without hits
+                        if primary_hits is None and content.filter_no_hits:
+                            misses += 1
+                            continue
+                        else:
+                            current_hits_list.append(primary_hits)
+                            primary_sources = tmp_collection.storage.get_sources(
+                                record_ids=current_primary_record_id, interval=interval
+                            )
+                            if primary_sources is not None:
+                                current_sources_list.append(primary_sources)
+
+                        for secondary_records in secondary_records_list:
+                            if secondary_records is None:
+                                continue
+                            current_secondary_record_id = secondary_records.sample(
+                                n=1, random_state=rng
+                            ).record_ids.iloc[0]
+
+                            current_sources = tmp_collection.storage.get_sources(
+                                record_ids=current_secondary_record_id,
+                                interval=interval,
+                            )
+                            current_hits = tmp_collection.storage.get_hits(
+                                record_ids=current_secondary_record_id,
+                                interval=interval,
+                            )
+                            if current_hits is not None:
+                                current_hits_list.append(current_hits)
+                            if current_sources is not None:
+                                current_sources_list.append(current_sources)
+
+                        combined_current_sources = Sources.concat(current_sources_list)
+                        combined_current_hits = Hits.concat(current_hits_list)
+
+                        if (
+                            current_primary_record_id in added_record_ids
+                            or current_primary_record_id in new_collection_record_ids
+                        ):
+                            # TODO: Discuss what happens if record_id already added?
+                            new_record_id = new_collection.storage.get_next_record_ids(
+                                1
+                            )[0]
+                            logging.debug(
+                                "Record id {} already added: Renaming to {}".format(
+                                    current_primary_record_id, new_record_id
+                                )
+                            )
+                        else:
+                            new_record_id = current_primary_record_id
+
+                        new_record_id = int(new_record_id)
+
+                        # Set all ids
+                        current_primary_record.df["record_id"] = new_record_id
+                        combined_current_hits.df["record_id"] = new_record_id
+
+                        new_collection.storage.set_records(
+                            records=current_primary_record, append=True
+                        )
+                        new_collection.storage.set_hits(combined_current_hits)
+
+                        if combined_current_sources is not None:
+                            combined_current_sources.df["record_id"] = new_record_id
+                            new_collection.storage.set_sources(combined_current_sources)
+
+                        added_record_ids.append(new_record_id)
+                        misses = 0
+
+                        pbar.update()
+
+                if misses == misses_break_number:
+                    raise ValueError(
+                        "Not enough primary records of type {} with hits".format(
+                            content.primary_type
+                        )
+                    )
+
+                logging.info(
+                    "Finished to create {} {} records".format(
+                        content.number_of_records, content.primary_type
+                    )
+                )
+
+        tmp_collection.close()
+
+        # TODO: Delete temporary collection
+        logging.info("Finished to merge collections with config.")
+        return new_collectio

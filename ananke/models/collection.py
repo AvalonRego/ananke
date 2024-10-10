@@ -198,13 +198,13 @@ class Collection:
             return [e.value for e in EventType]
         return [e.value for e in record_types]
 
-    def process_single_record(record):
-        return self.process_record(record, rng, redistribution_configuration, record_types)
 
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps in parallel."""
         # Define a function to process a single record
-       
+        def process_single_record(record):
+            return self.process_record(record, rng, redistribution_configuration, record_types)
+
         # Use joblib's Parallel and delayed to process records in parallel
         new_differences = Parallel(n_jobs=-1)(delayed(process_single_record)(record) for record in records.df.itertuples())
 

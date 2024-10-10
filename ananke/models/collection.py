@@ -30,6 +30,8 @@ from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
 
+
+
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
 warnings.filterwarnings("ignore", category=PerformanceWarning)
 
@@ -197,14 +199,20 @@ class Collection:
         return [e.value for e in record_types]
 
 
+    
     def process_records(self, records, rng, redistribution_configuration, record_types):
-        """Processes each record and redistributes timestamps."""
+        """Processes each record and redistributes timestamps in parallel."""
+        
+        def process_single_record(record):
+            return self.process_record(record, rng, redistribution_configuration, record_types)
+
+        # Use joblib's Parallel with tqdm to show progress
         new_differences = []
         with tqdm(total=len(records), mininterval=0.5) as pbar:
-            for record in records.df.itertuples():
-                difference = self.process_record(record, rng, redistribution_configuration, record_types)
-                new_differences.append(difference)
-                pbar.update()
+            results = Parallel(n_jobs=-1,prefer="threads")(
+                delayed(lambda r: (process_single_record(r), pbar.update()))(record) for record in records.df.itertuples())
+                )
+            new_differences = [result[0] for result in results]
 
         return new_differences
 

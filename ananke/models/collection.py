@@ -30,8 +30,6 @@ from ananke.services.collection.storage import AbstractCollectionStorage, Storag
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from functools import partial
 
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -204,21 +202,11 @@ class Collection:
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         new_differences = []
-
-        def process_single_record(record_tuple):
-            record = record_tuple[1]  # Access the actual record from the tuple
-            return self.process_record(record, rng, redistribution_configuration, record_types)
-
         with tqdm(total=len(records), mininterval=0.5) as pbar:
-            with ProcessPoolExecutor() as executor:
-                futures = {executor.submit(process_single_record, (index, record)): (index, record) for index, record in enumerate(records.df.itertuples())}
-                for future in as_completed(futures):
-                    try:
-                        new_differences.append(future.result())
-                    except Exception as e:
-                        # Handle exceptions or log errors
-                        print(f"Error processing record: {e}")
-                    pbar.update()
+            for record in records.df.itertuples():
+                difference = self.process_record(record, rng, redistribution_configuration, record_types)
+                new_differences.append(difference)
+                pbar.update()
 
         return new_differences
 

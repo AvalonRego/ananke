@@ -200,16 +200,19 @@ class Collection:
         return [e.value for e in record_types]
 
 
+    def process_single_record(record, process_instance, rng, redistribution_configuration, record_types):
+    return process_instance.process_record(record, rng, redistribution_configuration, record_types)
+
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         new_differences = []
 
-        def process_single_record(record):
-            return self.process_record(record, rng, redistribution_configuration, record_types)
-
         # Limit to 8 cores
         with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(process_single_record, record) for record in records.df.itertuples()]
+            futures = [
+                executor.submit(process_single_record, record, self, rng, redistribution_configuration, record_types)
+                for record in records.df.itertuples()
+            ]
             
             with tqdm(total=len(futures), mininterval=0.5) as pbar:
                 for future in concurrent.futures.as_completed(futures):
@@ -217,6 +220,7 @@ class Collection:
                     pbar.update()
 
         return new_differences
+
 
 
     def process_record(self, record, rng, redistribution_configuration, record_types):

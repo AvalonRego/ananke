@@ -37,6 +37,11 @@ warnings.filterwarnings("ignore", category=NaturalNameWarning)
 warnings.filterwarnings("ignore", category=PerformanceWarning)
 
 
+ def process_single_record(record, process_instance, rng, redistribution_configuration, record_types):
+        return process_instance.process_record(record, rng, redistribution_configuration, record_types)
+
+
+
 class CollectionKeys(str, Enum):
     """Enum containing keys for the collection file."""
 
@@ -200,9 +205,7 @@ class Collection:
         return [e.value for e in record_types]
 
 
-    def process_single_record(record, process_instance, rng, redistribution_configuration, record_types):
-        return process_instance.process_record(record, rng, redistribution_configuration, record_types)
-
+   
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         new_differences = []

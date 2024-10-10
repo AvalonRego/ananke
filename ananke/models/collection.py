@@ -37,8 +37,8 @@ warnings.filterwarnings("ignore", category=NaturalNameWarning)
 warnings.filterwarnings("ignore", category=PerformanceWarning)
 
 
- def process_single_record(record, process_instance, rng, redistribution_configuration, record_types):
-        return process_instance.process_record(record, rng, redistribution_configuration, record_types)
+def process_single_record(record, process_instance, rng, redistribution_configuration, record_types):
+    return process_instance.process_record(record, rng, redistribution_configuration, record_types)
 
 
 

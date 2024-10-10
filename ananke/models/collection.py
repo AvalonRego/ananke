@@ -407,7 +407,7 @@ class Collection:
 
         return RecordStatistics(df=df)
 
-     @classmethod
+    @classmethod
     def from_merge(cls, merge_configuration: MergeConfiguration) -> Collection:
         """Creates new collection based on merge configuration."""
         logging.info("Starting to merge collections with config.")

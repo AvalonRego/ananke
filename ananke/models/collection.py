@@ -201,7 +201,7 @@ class Collection:
 
 
     def process_single_record(record, process_instance, rng, redistribution_configuration, record_types):
-    return process_instance.process_record(record, rng, redistribution_configuration, record_types)
+        return process_instance.process_record(record, rng, redistribution_configuration, record_types)
 
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""

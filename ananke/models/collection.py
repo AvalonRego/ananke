@@ -184,12 +184,12 @@ class Collection:
         self.logger.debug("Redistribution interval: [{},{})".format(interval.start, interval.end))
 
         # Helper function for processing a single record
-        def process_single_record(record):
-            current_record_id = getattr(record, "record_id")
-            current_record_type = getattr(record, "type")
+        def process_single_record(record_data):
+            current_record_id = record_data['record_id']
+            current_record_type = record_data['type']
+            current_time = record_data['time']
             current_sources = self.storage.get_sources(record_ids=current_record_id)
             current_hits = self.storage.get_hits(record_ids=current_record_id)
-            current_time = getattr(record, "time")
             current_start = interval.start
             current_end = interval.end
             skip_record = False
@@ -245,17 +245,17 @@ class Collection:
             return new_difference  # Return the new difference for the record
 
         new_differences = []
-        with tqdm(total=len(records), mininterval=0.5) as pbar:
+        records_list = records.df.to_dict('records')  # Convert to list of dicts
+        with tqdm(total=len(records_list), mininterval=0.5) as pbar:
             # Parallel processing of records
             new_differences = Parallel(n_jobs=-1)(
-                delayed(process_single_record)(record) for record in records.df.itertuples()
+                delayed(process_single_record)(record) for record in records_list
             )
             pbar.update(len(new_differences))
 
         records.add_time(new_differences)
         self.storage.set_records(records=records, append=False)
         self.logger.info("Finished to redistribute with mode: {}".format(mode))
-
 
     def append(
         self,

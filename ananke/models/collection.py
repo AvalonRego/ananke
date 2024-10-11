@@ -204,7 +204,7 @@ class Collection:
         """Processes each record and redistributes timestamps."""
         # Use joblib to parallelize the processing of records
         new_differences = Parallel(n_jobs=8)(
-            delayed(self.process_record)([record])#, rng, redistribution_configuration, record_types)
+            delayed(self.process_record)(record)#, rng, redistribution_configuration, record_types)
             for record in records.df.itertuples()
         )
 
@@ -212,7 +212,7 @@ class Collection:
 
 
 
-    def process_record(self, record)#, rng, redistribution_configuration, record_types):
+    def process_record(self, record):#, rng, redistribution_configuration, record_types):
         """Processes an individual record for redistribution."""
         print('entered process record')
         return 0

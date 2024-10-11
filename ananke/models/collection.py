@@ -203,7 +203,6 @@ class Collection:
         """Calculates the square of a number."""
         return str(x)
 
-    def process_numbers(self, numbers):
         
 
     def process_records(self, records, rng, redistribution_configuration, record_types):

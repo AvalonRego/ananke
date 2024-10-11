@@ -180,8 +180,8 @@ class Collection:
         
         new_differences = self.process_records(records, rng, redistribution_configuration, record_types)
 
-        #records.add_time(new_differences)
-        #self.storage.set_records(records=records, append=False)
+        records.add_time(new_differences)
+        self.storage.set_records(records=records, append=False)
         self.logger.info("Finished redistribution with mode: {}".format(redistribution_configuration.mode))
 
 
@@ -199,33 +199,23 @@ class Collection:
             return [e.value for e in EventType]
         return [e.value for e in record_types]
 
-    def string(self, x):
-        """Calculates the square of a number."""
-        return str(x)
-
-        
 
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         # Use joblib to parallelize the processing of records
-        """Processes a list of numbers in parallel."""
-        print("Processing numbers in parallel...")
-        results = Parallel(n_jobs=8)(
-            delayed(self.string)(num) for num in records.record_ids
+        new_differences = Parallel(n_jobs=8)(
+            delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
+            for record in records.df.itertuples()
         )
-        return results
-        
-        #new_differences = Parallel(n_jobs=8)(
-        #    delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
-        #    for record in records.df.itertuples()
-        #)
 
-        #return new_differences
+        return new_differences
 
 
 
-    def process_record(self, record, rng, redistribution_configuration, record_types):
+    def process_record(record, rng, redistribution_configuration, record_types):
         """Processes an individual record for redistribution."""
+        print('entered process record')
+        return 0
         current_record_id = getattr(record, "record_id")
         current_record_type = getattr(record, "type")
 
@@ -237,8 +227,7 @@ class Collection:
         if current_hits is None:
             self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
             return 0
-        print('entered process record')
-        return 0
+
         current_time = getattr(record, "time")
         interval = redistribution_configuration.interval
         current_start, current_end = interval.start, interval.end

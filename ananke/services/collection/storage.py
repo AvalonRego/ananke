@@ -757,7 +757,7 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         types: TypesTypes_ = None,
         record_ids: RecordIdsTypes_ = None,
         interval: Optional[Interval] = None,
-    ) -> None:
+     ) -> None:
         """Delete rows or the dataframe.
 
         If no criteria is passed, dataframe is deleted.

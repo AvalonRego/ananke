@@ -204,7 +204,7 @@ class Collection:
         """Processes each record and redistributes timestamps."""
         # Use joblib to parallelize the processing of records
         new_differences = Parallel(n_jobs=8)(
-            delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
+            delayed(self.process_record)(record)#, rng, redistribution_configuration, record_types)
             for record in records.df.itertuples()
         )
 
@@ -212,8 +212,10 @@ class Collection:
 
 
 
-    def process_record(self, record, rng, redistribution_configuration, record_types):
+    def process_record(self, record)#, rng, redistribution_configuration, record_types):
         """Processes an individual record for redistribution."""
+        print('entered process record')
+        return 0
         current_record_id = getattr(record, "record_id")
         current_record_type = getattr(record, "type")
 
@@ -225,8 +227,7 @@ class Collection:
         if current_hits is None:
             self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
             return 0
-        print('entered process record')
-        return 0
+        
         current_time = getattr(record, "time")
         interval = redistribution_configuration.interval
         current_start, current_end = interval.start, interval.end

@@ -223,7 +223,8 @@ class Collection:
         if current_hits is None:
             self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
             return 0
-
+        
+        break
         current_time = getattr(record, "time")
         interval = redistribution_configuration.interval
         current_start, current_end = interval.start, interval.end

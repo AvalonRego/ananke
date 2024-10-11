@@ -1,4 +1,5 @@
-"""Module containing a collection."""
+"""Module containing a collection.
+Parallel"""
 from __future__ import annotations
 
 import logging
@@ -29,6 +30,7 @@ from ananke.services.collection.storage import AbstractCollectionStorage, Storag
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
+from joblib import Parallel, delayed
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
 warnings.filterwarnings("ignore", category=PerformanceWarning)

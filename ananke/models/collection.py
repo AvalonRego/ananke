@@ -86,7 +86,7 @@ class Collection:
         record_ids: Optional[Union[int, List[int], pd.Series]] = None,
         interval: Optional[Interval] = None,
         batch_size: int = 100,
-    ) -> Collection:
+     ) -> Collection:
         """Create a copy of current collection with new storage configuration.
 
         Args:
@@ -128,7 +128,7 @@ class Collection:
 
     def import_data(
         self, importer: Type[AbstractCollectionImporter], **kwargs
-    ) -> Optional[Collection]:
+     ) -> Optional[Collection]:
         """Export the current collection by a given exporter.
 
         Args:
@@ -143,7 +143,7 @@ class Collection:
         configuration: ExportConfiguration,
         exporter: Type[AbstractCollectionExporter],
         **kwargs,
-    ) -> None:
+     ) -> None:
         """Export the current collection by a given exporter.
 
         Args:
@@ -279,7 +279,7 @@ class Collection:
         collection_to_append: Collection,
         with_hits_only: bool = True,
         interval: Optional[Interval] = None,
-    ) -> None:
+     ) -> None:
         """Concatenate multiple connections.
 
         Args:

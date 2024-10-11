@@ -155,70 +155,107 @@ class Collection:
         exporter_instance = exporter(configuration=configuration)
         exporter_instance.export(collection=self, **kwargs)
 
-    def process_single_record(
-        self, record, redistribution_configuration, mode, interval
-     ):
-        """Process a single record for redistribution."""
-        current_record_id = getattr(record, "record_id")
-        current_record_type = getattr(record, "type")
-        current_hits = self.storage.get_hits(record_ids=current_record_id)
-        current_sources = self.storage.get_sources(record_ids=current_record_id)
-        current_time = getattr(record, "time")
-
-        # Implement the redistribution logic
-        skip_record = False
-
-        if current_record_type not in redistribution_configuration.record_types:
-            skip_record = True
-
-        if current_hits is None:
-            skip_record = True
-
-        if skip_record:
-            return 0  # Return 0 for skipped records
-
-        # Perform redistribution logic...
-        # (Add your existing logic here)
-        new_time = np.random.uniform(interval.start, interval.end)  # Example logic
-        new_difference = new_time - current_time
-        current_hits.add_time(new_difference)
-        self.storage.del_hits(record_ids=current_record_id)
-        self.storage.set_hits(current_hits)
-
-        if current_sources is not None:
-            current_sources.add_time(new_difference)
-            self.storage.del_sources(record_ids=current_record_id)
-            self.storage.set_sources(current_sources)
-
-        return new_difference  # Return the new difference for the record
-
     def redistribute(
-        self, redistribution_configuration: RedistributionConfiguration, record_types: Optional[Union[List[Types], Types]] = None
+        self,
+        redistribution_configuration: RedistributionConfiguration,
+        record_types: Optional[Union[List[Types], Types]] = None,
      ) -> None:
-        """Redistributes the events records according to the configuration."""
-        records = self.storage.get_records()
+        """Redistributes the events records according to the configuration.
 
-        if records is None:
-            raise ValueError("No records to redistribute")
+        Args:
+            redistribution_configuration: Configuration to redistribute by
+            record_types: Record type to be redistributed.
+        """
+        rng = np.random.default_rng(redistribution_configuration.seed)
 
         if record_types is None:
             record_types = [e.value for e in EventType]
+        else:
+            record_types = [e.value for e in record_types]
+        records = self.storage.get_records()
 
         mode = redistribution_configuration.mode
         interval = redistribution_configuration.interval
 
-        with tqdm(total=len(records), mininterval=0.5) as pbar:
-            results = Parallel(n_jobs=8)(
-                delayed(self.process_single_record)(
-                    record, redistribution_configuration, mode, interval
-                )
-                for record in records.df.itertuples()
-            )
-            pbar.update(len(results))
+        if records is None:
+            raise ValueError("No records to redistribute")
 
-        records.add_time(results)
+        self.logger.info("Starting to redistribute with mode: {}".format(mode))
+        self.logger.debug("Redistribution interval: [{},{})".format(interval.start, interval.end))
+
+        # Helper function for processing a single record
+        def process_single_record(record):
+            current_record_id = getattr(record, "record_id")
+            current_record_type = getattr(record, "type")
+            current_sources = self.storage.get_sources(record_ids=current_record_id)
+            current_hits = self.storage.get_hits(record_ids=current_record_id)
+            current_time = getattr(record, "time")
+            current_start = interval.start
+            current_end = interval.end
+            skip_record = False
+
+            if current_record_type not in record_types:
+                skip_record = True
+
+            if current_hits is None:
+                skip_record = True
+                self.logger.info("No hits for event {}. Skipping!".format(current_record_id))
+
+            if skip_record:
+                return 0  # Return 0 for skipped records
+
+            # Redistribution logic
+            if mode != EventRedistributionMode.START_TIME:
+                percentile = None
+                if mode == EventRedistributionMode.CONTAINS_PERCENTAGE:
+                    percentile = redistribution_configuration.percentile
+
+                hits_statistics = current_hits.get_statistics(percentile=percentile)
+                current_min = hits_statistics.min
+                current_max = hits_statistics.max
+
+                if mode == EventRedistributionMode.CONTAINS_HIT:
+                    current_start = interval.start - current_max + current_time
+                    current_end = interval.end - current_min + current_time
+
+                if (mode == EventRedistributionMode.CONTAINS_EVENT or 
+                    mode == EventRedistributionMode.CONTAINS_PERCENTAGE):
+                    current_length = current_max - current_min
+                    current_offset = current_min - current_time
+                    current_start = interval.start - current_offset
+                    current_end = interval.end - current_offset - current_length
+
+            # Ensure valid interval
+            if current_end < current_start:
+                current_end = current_start + 1
+
+            # Generate new time
+            new_time = rng.uniform(current_start, current_end)
+            new_difference = new_time - current_time
+            
+            # Update hits and sources
+            current_hits.add_time(new_difference)
+            self.storage.del_hits(record_ids=current_record_id)
+            self.storage.set_hits(current_hits)
+            if current_sources is not None:
+                current_sources.add_time(new_difference)
+                self.storage.del_sources(record_ids=current_record_id)
+                self.storage.set_sources(current_sources)
+
+            return new_difference  # Return the new difference for the record
+
+        new_differences = []
+        with tqdm(total=len(records), mininterval=0.5) as pbar:
+            # Parallel processing of records
+            new_differences = Parallel(n_jobs=-1)(
+                delayed(process_single_record)(record) for record in records.df.itertuples()
+            )
+            pbar.update(len(new_differences))
+
+        records.add_time(new_differences)
         self.storage.set_records(records=records, append=False)
         self.logger.info("Finished to redistribute with mode: {}".format(mode))
+
 
     def append(
         self,

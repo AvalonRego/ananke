@@ -30,8 +30,6 @@ from ananke.services.collection.storage import AbstractCollectionStorage, Storag
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
-from joblib import Parallel, delayed
-
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
 warnings.filterwarnings("ignore", category=PerformanceWarning)
@@ -202,11 +200,12 @@ class Collection:
 
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
-        # Use joblib to parallelize the processing of records
-        new_differences = Parallel(n_jobs=8)(
-            delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
-            for record in records.df.itertuples()
-        )
+        new_differences = []
+        with tqdm(total=len(records), mininterval=0.5) as pbar:
+            for record in records.df.itertuples():
+                difference = self.process_record(record, rng, redistribution_configuration, record_types)
+                new_differences.append(difference)
+                pbar.update()
 
         return new_differences
 

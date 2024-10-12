@@ -34,6 +34,7 @@ from joblib.externals.loky import set_loky_pickler
 from joblib import parallel_config
 from joblib import Parallel, delayed
 from joblib import wrap_non_picklable_objects
+import multiprocessing as mp
 
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -214,11 +215,12 @@ class Collection:
         #        except Exception as e:
         #           print(f"Object cannot be pickled: {e}")
         #    break
-
-        new_differences = Parallel(n_jobs=8)(
-            delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
-            for record in records.df.itertuples()
-        )
+        if mp.get_start_method() != "spawn":
+            with parallel_config('multiprocessing'):
+                new_differences = Parallel(n_jobs=8)(
+                    delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
+                    for record in records.df.itertuples()
+                )
 
         return new_differences
 

@@ -204,12 +204,14 @@ class Collection:
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         # Use joblib to parallelize the processing of records
-        for i,obj in enumerate([record, rng, redistribution_configuration, record_types,self]):
-            try:
-                print(i)
-                pickle.dumps(obj)
-            except Exception as e:
-                print(f"Object cannot be pickled: {e}")
+        for record in records.df.itertuples():
+            for i,obj in enumerate([record, rng, redistribution_configuration, record_types,self]):
+                try:
+                    print(i)
+                    pickle.dumps(obj)
+                except Exception as e:
+                    print(f"Object cannot be pickled: {e}")
+            break
 
         new_differences = Parallel(n_jobs=8)(
             delayed(self.process_record)(record, rng, redistribution_configuration, record_types)

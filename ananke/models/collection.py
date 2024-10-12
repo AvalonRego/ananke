@@ -228,6 +228,7 @@ class Collection:
         """Processes an individual record for redistribution."""
         current_record_id = getattr(record, "record_id")
         current_record_type = getattr(record, "type")
+        print("entered process record")
 
         if current_record_type not in record_types:
             self.logger.debug("Skipping record {}: Type not in record types.".format(current_record_id))

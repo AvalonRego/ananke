@@ -215,7 +215,7 @@ class Collection:
         #           print(f"Object cannot be pickled: {e}")
         #    break
 
-        new_differences = Parallel(n_jobs=8,prefer='threads')(
+        new_differences = Parallel(n_jobs=3,prefer='threads')(
             delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
             for record in records.df.itertuples()
         )

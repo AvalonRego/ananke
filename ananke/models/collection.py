@@ -204,15 +204,16 @@ class Collection:
         """Processes each record and redistributes timestamps."""
         
 
-        new_differences=Parallel(n_jobs=1)(delayed(self.process_record)(record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
+        new_differences=Parallel(n_jobs=1)(delayed(self.process_record)(
+            record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
         """
         with tqdm(total=len(records), mininterval=0.5) as pbar:
             for record in records.df.itertuples():
                 difference = self.process_record(record, rng, redistribution_configuration, record_types)
                 new_differences.append(difference)
-                pbar.update()
+                pbar.update()"""
 
-        return new_differences"""
+        return new_differences
 
 
     def process_record(self, record, rng, redistribution_configuration, record_types):

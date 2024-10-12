@@ -29,11 +29,8 @@ from ananke.services.collection.importers import AbstractCollectionImporter
 from ananke.services.collection.storage import AbstractCollectionStorage, StorageFactory
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
-import time
 
-
-from joblib import Parallel, delayed
-
+from joblib import Parallel,delayed
 
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -91,7 +88,7 @@ class Collection:
         record_ids: Optional[Union[int, List[int], pd.Series]] = None,
         interval: Optional[Interval] = None,
         batch_size: int = 100,
-     ) -> Collection:
+    ) -> Collection:
         """Create a copy of current collection with new storage configuration.
 
         Args:
@@ -133,7 +130,7 @@ class Collection:
 
     def import_data(
         self, importer: Type[AbstractCollectionImporter], **kwargs
-     ) -> Optional[Collection]:
+    ) -> Optional[Collection]:
         """Export the current collection by a given exporter.
 
         Args:
@@ -148,7 +145,7 @@ class Collection:
         configuration: ExportConfiguration,
         exporter: Type[AbstractCollectionExporter],
         **kwargs,
-     ) -> None:
+    ) -> None:
         """Export the current collection by a given exporter.
 
         Args:
@@ -205,29 +202,22 @@ class Collection:
 
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
-        # Use joblib to parallelize the processing of records
-        #for record in records.df.itertuples():
-        #    for i,obj in enumerate([record, rng, redistribution_configuration, record_types,self]):
-        #        try:
-        #            print(i)
-        #            pickle.dumps(obj)
-        #        except Exception as e:
-        #           print(f"Object cannot be pickled: {e}")
-        #    break
+        
 
-        new_differences = Parallel(n_jobs=3,prefer='threads')(
-            delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
-            for record in records.df.itertuples()
-        )
+        new_differences=Parallel(n_jobs=2)(delayed(self.process_record)(
+            record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
+        """
+        with tqdm(total=len(records), mininterval=0.5) as pbar:
+            for record in records.df.itertuples():
+                difference = self.process_record(record, rng, redistribution_configuration, record_types)
+                new_differences.append(difference)
+                pbar.update()
 
-        return new_differences
-
+        return new_differences"""
 
 
     def process_record(self, record, rng, redistribution_configuration, record_types):
         """Processes an individual record for redistribution."""
-        print(f'entered process record{time.time():.3f}')
-        #return 0
         current_record_id = getattr(record, "record_id")
         current_record_type = getattr(record, "type")
 
@@ -239,7 +229,7 @@ class Collection:
         if current_hits is None:
             self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
             return 0
-        
+
         current_time = getattr(record, "time")
         interval = redistribution_configuration.interval
         current_start, current_end = interval.start, interval.end
@@ -295,7 +285,7 @@ class Collection:
         collection_to_append: Collection,
         with_hits_only: bool = True,
         interval: Optional[Interval] = None,
-     ) -> None:
+    ) -> None:
         """Concatenate multiple connections.
 
         Args:

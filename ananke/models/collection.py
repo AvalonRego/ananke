@@ -216,7 +216,7 @@ class Collection:
         new_differences = []
 
         # Use joblib to parallelize the processing of records
-        results = Parallel(n_jobs=1)(delayed(self.process_record)(record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
+        results = Parallel(n_jobs=2)(delayed(self.process_record)(record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
 
         # Collect the results
         new_differences.extend(results)

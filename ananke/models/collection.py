@@ -204,7 +204,7 @@ class Collection:
         """Processes each record and redistributes timestamps."""
         
 
-        new_differences=Parallel(n_jobs=2,prefer='threads')(delayed(self.process_record)(
+        new_differences=Parallel(n_jobs=1,prefer='threads')(delayed(self.process_record)(
             record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
         """
         with tqdm(total=len(records), mininterval=0.5) as pbar:

@@ -29,6 +29,7 @@ from ananke.services.collection.importers import AbstractCollectionImporter
 from ananke.services.collection.storage import AbstractCollectionStorage, StorageFactory
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
+import time
 
 
 from joblib import Parallel, delayed
@@ -225,8 +226,8 @@ class Collection:
 
     def process_record(self, record, rng, redistribution_configuration, record_types):
         """Processes an individual record for redistribution."""
-        print('entered process record')
-        return 0
+        print(f'entered process record{time.time():.3f}')
+        #return 0
         current_record_id = getattr(record, "record_id")
         current_record_type = getattr(record, "type")
 

@@ -31,6 +31,7 @@ from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
 from joblib import Parallel, delayed
+import pickle
 
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -203,6 +204,13 @@ class Collection:
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         # Use joblib to parallelize the processing of records
+        for i,obj in enumerate([record, rng, redistribution_configuration, record_types,self]):
+            try:
+                print(i)
+                pickle.dumps(obj)
+            except Exception as e:
+                print(f"Object cannot be pickled: {e}")
+
         new_differences = Parallel(n_jobs=8)(
             delayed(self.process_record)(record, rng, redistribution_configuration, record_types)
             for record in records.df.itertuples()
@@ -212,7 +220,7 @@ class Collection:
 
 
 
-    def process_record(record, rng, redistribution_configuration, record_types):
+    def process_record(self, record, rng, redistribution_configuration, record_types):
         """Processes an individual record for redistribution."""
         print('entered process record')
         return 0
@@ -227,7 +235,7 @@ class Collection:
         if current_hits is None:
             self.logger.warning("No hits for event {}. Skipping!".format(current_record_id))
             return 0
-
+        
         current_time = getattr(record, "time")
         interval = redistribution_configuration.interval
         current_start, current_end = interval.start, interval.end

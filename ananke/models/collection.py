@@ -30,8 +30,10 @@ from ananke.services.collection.storage import AbstractCollectionStorage, Storag
 from tables import NaturalNameWarning, PerformanceWarning
 from tqdm import tqdm
 
+from joblib.externals.loky import set_loky_pickler
+from joblib import parallel_config
 from joblib import Parallel, delayed
-import pickle
+from joblib import wrap_non_picklable_objects
 
 
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -204,14 +206,14 @@ class Collection:
     def process_records(self, records, rng, redistribution_configuration, record_types):
         """Processes each record and redistributes timestamps."""
         # Use joblib to parallelize the processing of records
-        for record in records.df.itertuples():
-            for i,obj in enumerate([record, rng, redistribution_configuration, record_types,self]):
-                try:
-                    print(i)
-                    pickle.dumps(obj)
-                except Exception as e:
-                    print(f"Object cannot be pickled: {e}")
-            break
+        #for record in records.df.itertuples():
+        #    for i,obj in enumerate([record, rng, redistribution_configuration, record_types,self]):
+        #        try:
+        #            print(i)
+        #            pickle.dumps(obj)
+        #        except Exception as e:
+        #           print(f"Object cannot be pickled: {e}")
+        #    break
 
         new_differences = Parallel(n_jobs=8)(
             delayed(self.process_record)(record, rng, redistribution_configuration, record_types)

@@ -792,7 +792,7 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
 
         try:
             # Use parallel processing if supported
-            Parallel(n_jobs=8)(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
+            Parallel(n_jobs=8,prefer='threads')(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
         except KeyError:
             pass
 

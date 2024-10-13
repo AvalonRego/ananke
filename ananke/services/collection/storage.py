@@ -751,35 +751,48 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         except KeyError:
             return None
 
-    def __del_data(
-        self,
-        key: StorageKeys,
-        types: TypesTypes_ = None,
-        record_ids: RecordIdsTypes_ = None,
-        interval: Optional[Interval] = None,
-     ) -> None:
-        """Delete rows or the dataframe.
+    # def __del_data(
+    #     self,
+    #     key: StorageKeys,
+    #     types: TypesTypes_ = None,
+    #     record_ids: RecordIdsTypes_ = None,
+    #     interval: Optional[Interval] = None,
+    #  ) -> None:
+    #     """Delete rows or the dataframe.
 
-        If no criteria is passed, dataframe is deleted.
+    #     If no criteria is passed, dataframe is deleted.
 
-        Args:
-            key: Key to delete data by
-            types: Record types to filter by
-            record_ids: Record ids to filter by
-            interval: Interval to filter by
-        """
+    #     Args:
+    #         key: Key to delete data by
+    #         types: Record types to filter by
+    #         record_ids: Record ids to filter by
+    #         interval: Interval to filter by
+    #     """
+    #     self.__raise_writable()
+
+    #     str_key = str(key)
+
+    #     wheres = self.__get_wheres(
+    #         types=types, record_ids=record_ids, interval=interval
+    #     )
+
+    #     try:
+    #         for where in wheres:
+                
+    #             self.store.remove(key=str_key, where=where)
+    #         #Parallel(n_jobs=8,prefer="threads")(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
+    #     except KeyError:
+    #         pass
+
+    def __del_data(self, key: StorageKeys, types: TypesTypes_ = None, record_ids: RecordIdsTypes_ = None, interval: Optional[Interval] = None) -> None:
+        """Delete rows or the dataframe."""
         self.__raise_writable()
-
         str_key = str(key)
-
-        wheres = self.__get_wheres(
-            types=types, record_ids=record_ids, interval=interval
-        )
+        wheres = self.__get_wheres(types=types, record_ids=record_ids, interval=interval)
 
         try:
-            for where in wheres:
-                self.store.remove(key=str_key, where=where)
-            #Parallel(n_jobs=8,prefer="threads")(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
+            # Use parallel processing if supported
+            Parallel(n_jobs=8)(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
         except KeyError:
             pass
 

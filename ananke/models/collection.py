@@ -200,8 +200,8 @@ class Collection:
         return [e.value for e in record_types]
 
 
-    """def process_records(self, records, rng, redistribution_configuration, record_types):
-        Processes each record and redistributes timestamps.
+    def process_records(self, records, rng, redistribution_configuration, record_types):
+        """Processes each record and redistributes timestamps."""
         new_differences = []
         with tqdm(total=len(records), mininterval=0.5) as pbar:
             for record in records.df.itertuples():
@@ -209,19 +209,19 @@ class Collection:
                 new_differences.append(difference)
                 pbar.update()
 
-        return new_differences"""
-
-    def process_records(self, records, rng, redistribution_configuration, record_types):
-        """Processes each record and redistributes timestamps in parallel."""
-        new_differences = []
-
-        # Use joblib to parallelize the processing of records
-        results = Parallel(n_jobs=2,prefer='threads')(delayed(self.process_record)(record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
-
-        # Collect the results
-        new_differences.extend(results)
-
         return new_differences
+
+    # def process_records(self, records, rng, redistribution_configuration, record_types):
+    #     """Processes each record and redistributes timestamps in parallel."""
+    #     new_differences = []
+
+    #     # Use joblib to parallelize the processing of records
+    #     results = Parallel(n_jobs=1,prefer='threads')(delayed(self.process_record)(record, rng, redistribution_configuration, record_types) for record in records.df.itertuples())
+
+    #     # Collect the results
+    #     new_differences.extend(results)
+
+    #     return new_differences
 
 
     def process_record(self, record, rng, redistribution_configuration, record_types):

@@ -789,10 +789,13 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         self.__raise_writable()
         str_key = str(key)
         wheres = self.__get_wheres(types=types, record_ids=record_ids, interval=interval)
+        def remove_debug(key,where):
+            print('removing')
+            return self.store.remove(key=str_key, where=where)
 
         try:
             # Use parallel processing if supported
-            Parallel(n_jobs=8,prefer='threads')(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
+            Parallel(n_jobs=8,prefer='threads')(delayed(remove_debug)(key=str_key, where=where) for where in wheres)
         except KeyError:
             pass
 
@@ -863,7 +866,7 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         record_ids: RecordIdsTypes_ = None,
         interval: Optional[Interval] = None,
         max_wheres_number: int = 30,
-    ) -> List[str]:
+     ) -> List[str]:
         """Gets the where clause to select records by.
 
         As numpy only accepts less than 32 conditions per query, wheres are separated

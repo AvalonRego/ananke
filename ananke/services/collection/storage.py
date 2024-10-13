@@ -789,9 +789,11 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         self.__raise_writable()
         str_key = str(key)
         wheres = self.__get_wheres(types=types, record_ids=record_ids, interval=interval)
+
         def remove_debug(key,where):
             print('removing')
-            return self.store.remove(key=str_key, where=where)
+            print(key,where)
+            return self.store.remove(key, where)
 
         try:
             # Use parallel processing if supported

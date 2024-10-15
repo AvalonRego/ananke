@@ -790,17 +790,13 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         str_key = str(key)
         wheres = self.__get_wheres(types=types, record_ids=record_ids, interval=interval)
 
-        def remove_debug(key1,where1):
-            print('removing')
-            print(key,where)
-            print(type(self.store))
-            print(type(self.store.remove))
-            print(type(self.store.remove()))
-            return self.store.remove(key=key1, where=where1)
+        print(type(self.store))
+        print(type(self.store.remove))
+        print(type(self.store.remove()))
 
         try:
             # Use parallel processing if supported
-            Parallel(n_jobs=8,prefer='threads')(delayed(remove_debug)(key=str_key, where1=where) for where in wheres)
+            Parallel(n_jobs=8,prefer='threads')(delayed(self.store.remove)(key=str_key, where1=where) for where in wheres)
         except KeyError:
             pass
 

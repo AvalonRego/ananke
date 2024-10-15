@@ -793,6 +793,8 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
         def remove_debug(key,where):
             print('removing')
             print(key,where)
+            print(type(self))
+            print(self)
             return self.store.remove(key, where)
 
         try:

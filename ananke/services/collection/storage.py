@@ -784,46 +784,25 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
     #     except KeyError:
     #         pass
 
-    # def __del_data(self, key: StorageKeys, types: TypesTypes_ = None, record_ids: RecordIdsTypes_ = None, interval: Optional[Interval] = None) -> None:
-    #     """Delete rows or the dataframe."""
-    #     self.__raise_writable()
-    #     str_key = str(key)
-    #     wheres = self.__get_wheres(types=types, record_ids=record_ids, interval=interval)
-
-    #     def remove_debug(key,where):
-    #         print('removing')
-    #         print(key,where)
-    #         print(type(self))
-    #         print(self)
-    #         return self.store.remove(key, where)
-
-    #     try:
-    #         # Use parallel processing if supported
-    #         Parallel(n_jobs=8,prefer='threads')(delayed(remove_debug)(key=str_key, where=where) for where in wheres)
-    #     except KeyError:
-    #         pass
-
     def __del_data(self, key: StorageKeys, types: TypesTypes_ = None, record_ids: RecordIdsTypes_ = None, interval: Optional[Interval] = None) -> None:
+        """Delete rows or the dataframe."""
         self.__raise_writable()
         str_key = str(key)
         wheres = self.__get_wheres(types=types, record_ids=record_ids, interval=interval)
 
+        def remove_debug(key,where):
+            print('removing')
+            print(key,where)
+            print(type(self.store))
+            print(type(self.store.remove))
+            print(type(self.store.remove()))
+            return self.store.remove(key, where)
+
         try:
-            # Collect all deletion tasks
-            deletion_tasks = [(str_key, where) for where in wheres if where]
-
-            # Process in batches
-            batch_size = 10  # Example batch size; adjust based on performance testing
-            for i in range(0, len(deletion_tasks), batch_size):
-                batch = deletion_tasks[i:i + batch_size]
-                # Assuming `remove` can take multiple conditions, handle the batch removal here
-                for key, where in batch:
-                    self.store.remove(key=key, where=where)  # This call could be optimized in a real implementation
+            # Use parallel processing if supported
+            Parallel(n_jobs=8,prefer='threads')(delayed(remove_debug)(key=str_key, where=where) for where in wheres)
         except KeyError:
-            logging.warning(f"Key '{str_key}' not found for deletion.")
-        except Exception as e:
-            logging.error(f"Error during deletion: {e}")
-
+            pass
 
     def __raise_writable(self) -> None:
         """Raises exception if not writable.

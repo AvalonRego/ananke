@@ -796,7 +796,7 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
             print(type(self.store))
             print(type(self.store.remove))
             print(type(self.store.remove()))
-            return self.store.remove(key, where)
+            return self.store.remove(key=key, where=where)
 
         try:
             # Use parallel processing if supported

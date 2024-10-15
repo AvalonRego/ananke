@@ -50,7 +50,7 @@ class AbstractCollectionStorage(ABC, Generic[CollectionStorageConfiguration_]):
         """
         self.configuration = configuration
         self._read_only = self.configuration.read_only
-        self.logger = logging.getLogger(type(self).__name__)
+        #self.logger = logging.getLogger(type(self).__name__)
 
     def __enter__(self) -> AbstractCollectionStorage:
         """Open storage connection on enter."""
@@ -796,7 +796,7 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
 
         try:
             # Use parallel processing if supported
-            Parallel(n_jobs=8,prefer='threads')(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
+            Parallel(n_jobs=8)(delayed(self.store.remove)(key=str_key, where=where) for where in wheres)
         except KeyError:
             pass
 
@@ -1039,14 +1039,14 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
     def optimize(self) -> None:
         """Optimize HDF5 Storage by recompressing and recreating indices."""
         dir = os.path.dirname(self.data_path)
-        self.logger.info("Starting to optimize HDF5.")
+        #self.logger.info("Starting to optimize HDF5.")
         tmp_file = os.path.join(dir, "{}.h5".format(str(uuid.uuid4())))
         indices_to_create_index = [
             StorageKeys.HITS,
             StorageKeys.SOURCES,
             StorageKeys.RECORDS,
         ]
-        self.logger.debug("Starting to recreate indices.")
+        #self.logger.debug("Starting to recreate indices.")
         file_keys = self.store.keys()
         for index in indices_to_create_index:
             current_index = str(index)
@@ -1056,10 +1056,10 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
                     columns=["record_id"],
                     optlevel=self.configuration.optlevel,
                 )
-        self.logger.debug("Finished recreating indices.")
+        #self.logger.debug("Finished recreating indices.")
         self.close()
         try:
-            self.logger.debug("Starting to ptrepack files.")
+            #self.logger.debug("Starting to ptrepack files.")
             command = [
                 "ptrepack",
                 "-o",
@@ -1073,11 +1073,11 @@ class HDF5CollectionStorage(AbstractCollectionStorage[HDF5StorageConfiguration])
             call(command)
             os.remove(self.data_path)
             shutil.move(tmp_file, self.data_path)
-            self.logger.debug("Finished to ptrepack files.")
+            #self.logger.debug("Finished to ptrepack files.")
         except:  # noqa: E722
             logging.warning("PTRepack not working. Skipping compression")
         self.open()
-        self.logger.info("Finished to optimize HDF5.")
+        #self.logger.info("Finished to optimize HDF5.")
 
 
 class StorageFactory:

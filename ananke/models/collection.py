@@ -88,7 +88,7 @@ class Collection:
         record_ids: Optional[Union[int, List[int], pd.Series]] = None,
         interval: Optional[Interval] = None,
         batch_size: int = 100,
-    ) -> Collection:
+     ) -> Collection:
         """Create a copy of current collection with new storage configuration.
 
         Args:
@@ -130,7 +130,7 @@ class Collection:
 
     def import_data(
         self, importer: Type[AbstractCollectionImporter], **kwargs
-    ) -> Optional[Collection]:
+     ) -> Optional[Collection]:
         """Export the current collection by a given exporter.
 
         Args:
@@ -145,7 +145,7 @@ class Collection:
         configuration: ExportConfiguration,
         exporter: Type[AbstractCollectionExporter],
         **kwargs,
-    ) -> None:
+     ) -> None:
         """Export the current collection by a given exporter.
 
         Args:
@@ -310,6 +310,7 @@ class Collection:
         collection_to_append.open()
         append_detector = collection_to_append.storage.get_detector()
         own_detector = self.storage.get_detector()
+    
 
         if own_detector is not None and not append_detector == own_detector:
             raise ValueError("Cannot merge two collections with different detectors.")
@@ -348,6 +349,7 @@ class Collection:
 
                     pbar.update(self.storage.configuration.batch_size)
         self.logger.info("Finished to append collection.")
+        collection_to_append.close()
 
     def drop_no_hit_records(self) -> None:
         """Deletes all the records without hits."""
@@ -629,6 +631,7 @@ class Collection:
                     )
                 )
 
+            new_collection.close()
         tmp_collection.close()
 
         # TODO: Delete temporary collection
